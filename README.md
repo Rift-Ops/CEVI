@@ -29,6 +29,7 @@ Python file in `actions/` and it works in both CLI and PyQt6 GUI.
 ## Installation
 
 ```bash
+python -m venv venv && source venv/bin/activate
 git clone https://github.com/<your-username>/CEVI.git
 cd CEVI
 pip install PyQt6
