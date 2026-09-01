@@ -1,5 +1,5 @@
 # CEVI
-## NB: For the moment the first version and the code itself is in French since I had not done the program to put it on github, so excuse and since the project is open source, you can easily adapt it to your language
+## NB: For the moment the first version and the code itself is in French since I had not done the program to put it on github, so excuse and since the project is open source, you can easily adapt it to your needs
 
 Soon I will make the second version but in English, thank you for understanding
 [![License: GNUv3](https://img.shields.io/badge/License-GNUv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
@@ -126,22 +126,23 @@ scrcpy records the mirrored stream to an MP4 file for a chosen duration
 | `lancer_v4l2loopback`        | Load the v4l2loopback module (sudo)               |
 
 ## Some screenshots
+
 1. This is the field that allows you to set the recording time of the phone screen connected to the pc via adb
    But it uses in the background the v4l2loopback module contained in the linux kernel (it will be installed in auto if absent)
 
-![[Capture d’écran du 2026-08-30 17-58-22.png|700]]
+![Recording duration field](scrennshots/Capture%20d%E2%80%99%C3%A9cran%20du%202026-08-30%2017-58-22.png)
 
 2. Here you will choose the number of the virtual device created by the v4l2loopback module (virtual camera) that will allow you to take screen recording and screen capture only on view
 
-![[Capture d’écran du 2026-09-01 18-59-41.png]]
+![Virtual device selection](scrennshots/Capture%20d%E2%80%99%C3%A9cran%20du%202026-09-01%2018-59-41.png)
 
 3. This is the interface that will allow you to set the IP and port on which your computer will connect to your phone via adb
 
-![[Capture d’écran du 2026-09-01 19-07-40.png]]
+![ADB connection settings](scrennshots/Capture%20d%E2%80%99%C3%A9cran%20du%202026-09-01%2019-07-40.png)
 
 4. The rest of the interface will allow you to **easily install the dependencies in order to have the v4l2loopback module available for transferring image streams from a window to ffmpeg**
 
-![[Capture d’écran du 2026-09-01 19-10-40.png]]
+![Dependency installer interface](scrennshots/Capture%20d%E2%80%99%C3%A9cran%20du%202026-09-01%2019-10-40.png)
 
 
 ## Add your own actions
