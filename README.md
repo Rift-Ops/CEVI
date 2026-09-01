@@ -1,6 +1,8 @@
 # CEVI
+## NB: For the moment the first version and the code itself is in French since I had not done the program to put it on github, so excuse and since the project is open source, you can easily adapt it to your language
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+Soon I will make the second version but in English, thank you for understanding
+[![License: GNUv3](https://img.shields.io/badge/License-GNUv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 CEVI — Android-on-Linux toolbox: connect your phone over Wi-Fi (ADB), mirror
 & record its screen with scrcpy + v4l2loopback, run diagnostics and install
@@ -31,7 +33,7 @@ Python file in `actions/` and it works in both CLI and PyQt6 GUI.
 ```bash
 python -m venv venv && source venv/bin/activate
 git clone https://github.com/<your-username>/CEVI.git
-cd CEVI
+cd CEVI && cd CEVI
 pip install PyQt6
 ```
 
@@ -108,20 +110,39 @@ scrcpy records the mirrored stream to an MP4 file for a chosen duration
 
 ## Available actions
 
-| Action | Description |
-|---|---|
-| `capture_ecran` | Screenshot of the phone screen (View Once photos) |
-| `enregistrer_ecran` | Screen recording as MP4 (View Once videos) |
-| `connecter_telephone` | Connect the phone over Wi-Fi (ADB TCP/IP) |
-| `deconnecter_adb` | Disconnect the ADB server |
-| `diagnostic` | Check that everything is installed and reachable |
-| `lister_peripheriques_video` | List `/dev/video*` devices |
-| `verifier_appli` | Check which app is currently in the foreground |
-| `installer_headers` | Install Linux headers (sudo) |
-| `installer_ffmpeg` | Install ffmpeg (sudo) |
-| `installer_modprobe` | Install modprobe/kmod (sudo) |
-| `installer_v4l2loopback` | Install v4l2loopback (sudo) |
-| `lancer_v4l2loopback` | Load the v4l2loopback module (sudo) |
+| Action                       | Description                                       |
+| ---------------------------- | ------------------------------------------------- |
+| `capture_ecran`              | Screenshot of the phone screen (View Once photos) |
+| `enregistrer_ecran`          | Screen recording as MP4 (View Once videos)        |
+| `connecter_telephone`        | Connect the phone over Wi-Fi (ADB TCP/IP)         |
+| `deconnecter_adb`            | Disconnect the ADB server                         |
+| `diagnostic`                 | Check that everything is installed and reachable  |
+| `lister_peripheriques_video` | List `/dev/video*` devices                        |
+| `verifier_appli`             | Check which app is currently in the foreground    |
+| `installer_headers`          | Install Linux headers (sudo)                      |
+| `installer_ffmpeg`           | Install ffmpeg (sudo)                             |
+| `installer_modprobe`         | Install modprobe/kmod (sudo)                      |
+| `installer_v4l2loopback`     | Install v4l2loopback (sudo)                       |
+| `lancer_v4l2loopback`        | Load the v4l2loopback module (sudo)               |
+
+## Some screenshots
+1. This is the field that allows you to set the recording time of the phone screen connected to the pc via adb
+   But it uses in the background the v4l2loopback module contained in the linux kernel (it will be installed in auto if absent)
+
+![[Capture d’écran du 2026-08-30 17-58-22.png|700]]
+
+2. Here you will choose the number of the virtual device created by the v4l2loopback module (virtual camera) that will allow you to take screen recording and screen capture only on view
+
+![[Capture d’écran du 2026-09-01 18-59-41.png]]
+
+3. This is the interface that will allow you to set the IP and port on which your computer will connect to your phone via adb
+
+![[Capture d’écran du 2026-09-01 19-07-40.png]]
+
+4. The rest of the interface will allow you to **easily install the dependencies in order to have the v4l2loopback module available for transferring image streams from a window to ffmpeg**
+
+![[Capture d’écran du 2026-09-01 19-10-40.png]]
+
 
 ## Add your own actions
 
@@ -146,12 +167,12 @@ def hello(nom="world"):
 python main.py -e hello --args nom=CEVI
 ```
 
-## Disclaimer
+## Disclaimer ⚠️
 
-This project is provided for **educational and personal purposes**.
-Only capture media you are entitled to keep, and respect the privacy of
-the people you communicate with, as well as the terms of service of the
-apps involved.
+This project is offered for educational and personal purposes.
+Only media that you have the right to retain and respect the privacy of the persons with whom you communicate, as well as the terms and conditions of service of
+the application involved.
+Any attempts to use outside the permission area would be at your sole risk
 
 ## License
 
