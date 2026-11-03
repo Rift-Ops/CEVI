@@ -2,8 +2,8 @@
 """
 chargeur_cevi.py — Chargement de CEVI.py en tant que bibliothèque.
 
-CEVI.py appelle start() à sa dernière ligne : un import classique exécuterait
-donc le menu interactif dès le chargement. Pour réutiliser les fonctions de
+CEVI.py ne lance son menu que s'il est exécuté directement (__main__).
+Ce chargeur reste prudent pour les anciennes versions qui appelaient start(). Pour réutiliser les fonctions de
 CEVI.py (capture, enregistrement, connexion...) SANS TOUCHER AU FICHIER,
 ce chargeur :
 
@@ -45,11 +45,13 @@ def charger_cevi():
     except OSError as e:
         raise RuntimeError(f"Impossible de lire CEVI.py ({chemin}) : {e}")
 
+    # Le module est exécuté sous le nom "CEVI" : le bloc
+    # `if __name__ == "__main__": start()` de CEVI.py ne se déclenche donc pas.
+    # Pour un ancien CEVI.py qui appelait start() sans cette protection, on
+    # neutralise l'appel final EN MÉMOIRE (le fichier reste inchangé).
     code = source.rstrip()
-    if code.endswith("start()"):
-        code = code[: -len("start()")] + (
-            "pass  # start() neutralisé EN MÉMOIRE : CEVI est chargé comme bibliothèque"
-        )
+    if code.endswith("\nstart()"):
+        code = code[: -len("start()")] + "pass  # start() neutralisé EN MÉMOIRE"
 
     module = types.ModuleType("CEVI")
     module.__file__ = chemin

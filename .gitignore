@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+venv/
+*.png.tmp
+# Outils extraits de outils.zip (adb, scrcpy)
+CEVI/outils/
+# Captures et enregistrements produits par CEVI
+*capture.png
+*_capture.mp4
+*_enregistrement.mp4

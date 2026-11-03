@@ -49,12 +49,12 @@ def installer_ffmpeg():
 @enregistrer_action(
     "installer_modprobe",
     "Installer modprobe",
-    "Installe modprobe (sudo apt install modprobe -y). Le mot de passe "
+    "Installe modprobe, fourni par le paquet kmod (sudo apt install kmod -y). Le mot de passe "
     "administrateur est demandé explicitement : dialogue en mode graphique, "
     "saisie cachée dans le terminal.",
 )
 def installer_modprobe():
-    return _installer(["modprobe"], "modprobe")
+    return _installer(["kmod"], "modprobe (kmod)")
 
 
 @enregistrer_action(
