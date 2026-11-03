@@ -6,6 +6,7 @@ main.py — Point d'entrée unique de CEVI.
 Utilisation :
     python main.py                  -> menu interactif en ligne de commande
     python main.py -mg              -> interface graphique (PyQt6)
+    python main.py -L en            -> choisit la langue (fr ou en, mémorisée)
     python main.py -l               -> liste des actions disponibles
     python main.py -e diagnostic    -> exécute directement une action
     python main.py -e connecter_telephone --args ip=192.168.1.24 port=5555
@@ -32,7 +33,9 @@ if RACINE not in sys.path:
     sys.path.insert(0, RACINE)
 os.chdir(RACINE)
 
+from noyau import i18n      # noqa: E402
 from noyau import registre  # noqa: E402
+from noyau.i18n import _    # noqa: E402
 import actions              # noqa: E402,F401 — enregistre toutes les actions
 
 
@@ -40,64 +43,68 @@ def demander_parametres(action):
     """Demande les paramètres d'une action dans le terminal (mode interactif)."""
     valeurs = {}
     for p in action.parametres:
-        invite = p.label or p.nom
+        invite = _(p.label) if p.label else p.nom
         if p.type == "choix":
             invite += f" ({', '.join(str(c) for c in p.choix)})"
         if p.aide:
-            invite += f" [{p.aide}]"
+            invite += f" [{_(p.aide)}]"
         if p.defaut not in ("", None) or p.type == "bool":
-            invite += f" (défaut : {p.defaut})"
+            invite += " " + _("(défaut : {defaut})").format(defaut=p.defaut)
         while True:
             brut = input(f"{invite}: ").strip()
             if brut == "" and not p.requis:
                 valeurs[p.nom] = p.defaut
                 break
             if brut == "" and p.requis:
-                print("Ce paramètre est obligatoire.")
+                print(_("Ce paramètre est obligatoire."))
                 continue
             try:
                 valeurs[p.nom] = registre.convertir_valeur(p, brut)
                 break
             except ValueError as e:
-                print(f"Entrée invalide : {e}")
+                print(_("Entrée invalide : {e}").format(e=_(str(e))))
     return valeurs
 
 
 def mode_interactif():
     """Menu numéroté construit automatiquement depuis le registre d'actions."""
     liste = registre.actions_triees()
-    print("=" * 50)
-    print("CEVI — menu des options")
-    print("=" * 50)
     while True:
+        print("=" * 50)
+        print(_("CEVI — menu des options"))
+        print("=" * 50)
         print()
         for i, action in enumerate(liste, 1):
-            print(f"{i:>2}- {action.nom}")
-        print(" 0- Quitter")
-        choix = input("Quelle choix prendre: ").strip()
+            print(f"{i:>2}- {_(action.nom)}")
+        print(" L- " + _("Langue") + f" ({i18n.nom_langue(i18n.langue_courante())})")
+        print(" 0- " + _("Quitter"))
+        choix = input(_("Quel choix prendre: ")).strip()
         if choix == "0":
-            print("Au revoir !")
+            print(_("Au revoir !"))
             break
+        if choix.lower() == "l":
+            i18n.choisir_langue_terminal()
+            continue
         if not choix.isdigit() or not (1 <= int(choix) <= len(liste)):
-            print("Entrée invalide")
+            print(_("Entrée invalide"))
             continue
 
         action = liste[int(choix) - 1]
         print()
-        print(f"--- {action.nom} ---")
+        print(f"--- {_(action.nom)} ---")
         if action.description:
-            print(action.description)
+            print(_(action.description))
             print()
         valeurs = demander_parametres(action)
         try:
             resultat = registre.executer_action(action.identifiant, **valeurs)
         except (ValueError, OSError) as e:
-            print(f"Erreur : {e}")
+            print(_("Erreur : {e}").format(e=_(str(e))))
             continue
         if resultat is None:
             resultat = "Action terminée."
         print()
-        print(f"Résultat : {resultat}")
+        print(_("Résultat : {resultat}").format(resultat=i18n.traduire_texte(str(resultat))))
 
 
 def executer_directe(identifiant, args_bruts):
@@ -105,19 +112,19 @@ def executer_directe(identifiant, args_bruts):
     paires = {}
     for brut in args_bruts:
         if "=" not in brut:
-            print(f"Argument invalide : '{brut}' (format attendu : param=valeur)")
+            print(_("Argument invalide : '{brut}' (format attendu : param=valeur)").format(brut=brut))
             sys.exit(1)
         cle, valeur = brut.split("=", 1)
         paires[cle.strip()] = valeur
     try:
         resultat = registre.executer_action(identifiant, **paires)
     except ValueError as e:
-        print(f"Erreur : {e}")
-        print("Astuce : 'python main.py -l' montre chaque action et ses paramètres.")
+        print(_("Erreur : {e}").format(e=_(str(e))))
+        print(_("Astuce : 'python main.py -l' montre chaque action et ses paramètres."))
         sys.exit(1)
     if resultat is None:
         resultat = "Action terminée."
-    print(f"Résultat : {resultat}")
+    print(_("Résultat : {resultat}").format(resultat=i18n.traduire_texte(str(resultat))))
 
 
 def mode_graphique():
@@ -127,10 +134,10 @@ def mode_graphique():
     except ImportError as e:
         nom = getattr(e, "name", "") or ""
         if "PyQt" in str(e) or "PyQt" in nom:
-            print("PyQt6 n'est pas installé.")
-            print("Installez-le avec la commande : pip install PyQt6")
+            print(_("PyQt6 n'est pas installé."))
+            print(_("Installez-le avec la commande : pip install PyQt6"))
         else:
-            print(f"Impossible de charger l'interface graphique : {e}")
+            print(_("Impossible de charger l'interface graphique : {e}").format(e=e))
         sys.exit(1)
     try:
         lancer()
@@ -140,31 +147,50 @@ def mode_graphique():
         import traceback
         traceback.print_exc()
         print()
-        print("L'interface graphique n'a pas pu démarrer.")
-        print("Vérifiez votre installation :  pip install --upgrade PyQt6")
+        print(_("L'interface graphique n'a pas pu démarrer."))
+        print(_("Vérifiez votre installation :  pip install --upgrade PyQt6"))
         sys.exit(1)
 
 
+def choisir_langue_au_demarrage():
+    """Lit --langue/-L avant tout affichage, pour que même l'aide soit traduite."""
+    pre = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
+    pre.add_argument("-L", "--langue")
+    connus, _restes = pre.parse_known_args()
+    if connus.langue and not i18n.definir_langue(connus.langue, memoriser=True):
+        print(_("Langue inconnue : '{code}'. Langues disponibles : {liste}").format(
+            code=connus.langue, liste=", ".join(i18n.langues_disponibles())))
+        sys.exit(1)
+    if not connus.langue:
+        i18n.initialiser()
+
+
 def main():
+    choisir_langue_au_demarrage()
+    i18n.installer_flux_traduits()
     parseur = argparse.ArgumentParser(
         prog="CEVI",
-        description="CEVI — lanceur unique : ligne de commande ou interface graphique.",
+        description=_("CEVI — lanceur unique : ligne de commande ou interface graphique."),
     )
     parseur.add_argument(
         "-mg", "--mode-graphique", action="store_true",
-        help="lancer l'interface graphique (PyQt6)",
+        help=_("lancer l'interface graphique (PyQt6)"),
+    )
+    parseur.add_argument(
+        "-L", "--langue", metavar="|".join(i18n.langues_disponibles()),
+        help=_("langue de l'interface : fr ou en (le choix est mémorisé)"),
     )
     parseur.add_argument(
         "-l", "--liste", action="store_true",
-        help="afficher la liste des actions disponibles et leurs paramètres",
+        help=_("afficher la liste des actions disponibles et leurs paramètres"),
     )
     parseur.add_argument(
         "-e", "--executer", metavar="ID",
-        help="exécuter directement une action (voir les identifiants avec -l)",
+        help=_("exécuter directement une action (voir les identifiants avec -l)"),
     )
     parseur.add_argument(
         "--args", nargs="*", default=[], metavar="param=valeur",
-        help="paramètres de l'action, ex : --args ip=192.168.1.24 port=5555",
+        help=_("paramètres de l'action, ex : --args ip=192.168.1.24 port=5555"),
     )
     args = parseur.parse_args()
 

@@ -32,8 +32,10 @@ from PyQt6.QtWidgets import (
     QScrollArea, QSpinBox, QSplitter, QVBoxLayout, QWidget,
 )
 
+from noyau import i18n
 from noyau import registre
 from noyau import sudo
+from noyau.i18n import _
 
 STYLESHEET = """
 QMainWindow, QWidget { background: #f4f6f8; color: #1f2933; font-size: 13px; }
@@ -82,10 +84,16 @@ class RedirectionSortie(QObject):
 
     texte_emis = pyqtSignal(str)
 
-    def write(self, texte):
+    def __init__(self):
+        super().__init__()
+        # print() écrit « texte » puis « \n » séparément : on regroupe par
+        # lignes complètes pour pouvoir les traduire dans la langue choisie.
+        self._tampon = i18n.TamponLignes()
+        self._verrou = threading.Lock()
+
+    def _sortir(self, texte):
         if not texte:
             return
-        texte = str(texte)
         try:
             self.texte_emis.emit(texte)
         except Exception:
@@ -96,7 +104,20 @@ class RedirectionSortie(QObject):
         except Exception:
             pass
 
+    def write(self, texte):
+        if not texte:
+            return
+        with self._verrou:
+            try:
+                sortie = self._tampon.ecrire(str(texte))
+            except Exception:
+                sortie = str(texte)  # une traduction ne doit jamais perdre un message
+        self._sortir(sortie)
+
     def flush(self):
+        with self._verrou:
+            reste = self._tampon.vider()
+        self._sortir(reste)
         try:
             sys.__stdout__.flush()
         except Exception:
@@ -148,7 +169,7 @@ class OuvrierAction(threading.Thread):
         try:
             resultat = self.action.fonction(**self.kwargs)
         except Exception as e:  # filet de sécurité : l'interface ne doit jamais planter
-            resultat = f"Erreur pendant l'exécution : {e}"
+            resultat = _("Erreur pendant l'exécution : {e}").format(e=_(str(e)))
         finally:
             sudo.oublier()  # le mot de passe sudo ne survit jamais à l'action
         if resultat is None:
@@ -167,7 +188,6 @@ class Fenetre(QMainWindow):
 
     def __init__(self, redirection):
         super().__init__()
-        self.setWindowTitle("CEVI — Panneau d'actions")
         self.resize(980, 640)
         self.occupe = False
         self.action_courante = None
@@ -181,7 +201,8 @@ class Fenetre(QMainWindow):
         self.setStyleSheet(STYLESHEET)
         self._construire_ui()
         self._remplir_liste()
-        self.ajouter_console("Console CEVI — les messages des actions s'affichent ici.\n")
+        self._retraduire()
+        self.ajouter_console(_("Console CEVI — les messages des actions s'affichent ici.\n"))
 
     def _signaler_erreur(self, contexte, dialogue=True):
         """Signale une erreur interne sans jamais faire planter l'application.
@@ -202,12 +223,40 @@ class Fenetre(QMainWindow):
             try:
                 boite = QMessageBox(self)
                 boite.setIcon(QMessageBox.Icon.Critical)
-                boite.setWindowTitle("Erreur interne — CEVI")
-                boite.setText(f"Une erreur est survenue ({contexte}).")
+                boite.setWindowTitle(_("Erreur interne — CEVI"))
+                boite.setText(_("Une erreur est survenue ({contexte}).").format(contexte=contexte))
                 boite.setDetailedText(texte)
                 boite.exec()
             except Exception:
                 pass
+
+    # ----------------------------------------------------------- langue
+
+    def _retraduire(self):
+        """Réécrit tous les textes de la fenêtre dans la langue active."""
+        self.setWindowTitle(_("CEVI — Panneau d'actions"))
+        self.titre.setText(_("CEVI — Panneau d'actions"))
+        self.libelle_langue.setText(_("Langue :"))
+        self.libelle_actions.setText(_("Actions disponibles"))
+        self.groupe_params.setTitle(_("Paramètres"))
+        self.groupe_console.setTitle(_("Console"))
+        self.bouton_effacer.setText(_("Effacer la console"))
+        self.bouton_executer.setText(
+            _("Exécution en cours...") if self.occupe else _("Exécuter l'action"))
+        # liste des actions : mêmes lignes, noms traduits
+        for i, action in enumerate(self.actions_liste):
+            item = self.liste.item(i)
+            if item is not None:
+                item.setText(_(action.nom))
+        # description et formulaire de l'action sélectionnée
+        self._afficher_action(self.liste.currentRow())
+
+    @slot_protege()
+    def changer_langue(self, checked=False):
+        code = self.choix_langue.currentData()
+        if code and code != i18n.langue_courante():
+            i18n.definir_langue(code, memoriser=True)
+            self._retraduire()
 
     # ------------------------------------------------- mot de passe sudo
 
@@ -245,9 +294,22 @@ class Fenetre(QMainWindow):
         racine.setContentsMargins(14, 12, 14, 12)
         racine.setSpacing(10)
 
-        titre = QLabel("CEVI — Panneau d'actions")
-        titre.setObjectName("Titre")
-        racine.addWidget(titre)
+        entete = QHBoxLayout()
+        self.titre = QLabel()
+        self.titre.setObjectName("Titre")
+        entete.addWidget(self.titre)
+        entete.addStretch(1)
+        self.libelle_langue = QLabel()
+        entete.addWidget(self.libelle_langue)
+        self.choix_langue = QComboBox()
+        for code in i18n.langues_disponibles():
+            self.choix_langue.addItem(i18n.nom_langue(code), code)
+        self.choix_langue.setCurrentIndex(
+            max(0, self.choix_langue.findData(i18n.langue_courante())))
+        self.choix_langue.currentIndexChanged.connect(
+            lambda *args: self.changer_langue())
+        entete.addWidget(self.choix_langue)
+        racine.addLayout(entete)
 
         separateur = QSplitter(Qt.Orientation.Horizontal)
         racine.addWidget(separateur, 1)
@@ -256,7 +318,8 @@ class Fenetre(QMainWindow):
         gauche = QWidget()
         gl = QVBoxLayout(gauche)
         gl.setContentsMargins(0, 0, 0, 0)
-        gl.addWidget(QLabel("Actions disponibles"))
+        self.libelle_actions = QLabel()
+        gl.addWidget(self.libelle_actions)
         self.liste = QListWidget()
         gl.addWidget(self.liste, 1)
         self.libelle_description = QLabel("")
@@ -269,8 +332,8 @@ class Fenetre(QMainWindow):
         dl = QVBoxLayout(droite)
         dl.setContentsMargins(0, 0, 0, 0)
 
-        groupe_params = QGroupBox("Paramètres")
-        gp = QVBoxLayout(groupe_params)
+        self.groupe_params = QGroupBox()
+        gp = QVBoxLayout(self.groupe_params)
         zone = QScrollArea()
         zone.setWidgetResizable(True)
         zone.setFrameShape(QScrollArea.Shape.NoFrame)
@@ -279,7 +342,7 @@ class Fenetre(QMainWindow):
         self.formulaire.setSpacing(8)
         zone.setWidget(self.conteneur_params)
         gp.addWidget(zone)
-        dl.addWidget(groupe_params)
+        dl.addWidget(self.groupe_params)
 
         # La console est créée AVANT les boutons : le bouton "Effacer"
         # se connecte à self.console.clear (l'ordre visuel reste le même,
@@ -295,7 +358,7 @@ class Fenetre(QMainWindow):
         self.console.setFont(police)
 
         boutons = QHBoxLayout()
-        self.bouton_executer = QPushButton("Exécuter l'action")
+        self.bouton_executer = QPushButton()
         # NB : le signal clicked de Qt émet un booléen (checked). On passe par
         # une lambda SANS argument pour que ce booléen ne soit jamais transmis
         # à la méthode (PyQt6 compte les paramètres du slot pour tronquer).
@@ -304,16 +367,16 @@ class Fenetre(QMainWindow):
         )
         boutons.addWidget(self.bouton_executer)
         boutons.addStretch(1)
-        bouton_effacer = QPushButton("Effacer la console")
-        bouton_effacer.setObjectName("Secondaire")
-        bouton_effacer.clicked.connect(self.console.clear)
-        boutons.addWidget(bouton_effacer)
+        self.bouton_effacer = QPushButton()
+        self.bouton_effacer.setObjectName("Secondaire")
+        self.bouton_effacer.clicked.connect(self.console.clear)
+        boutons.addWidget(self.bouton_effacer)
         dl.addLayout(boutons)
 
-        groupe_console = QGroupBox("Console")
-        gc = QVBoxLayout(groupe_console)
+        self.groupe_console = QGroupBox()
+        gc = QVBoxLayout(self.groupe_console)
         gc.addWidget(self.console)
-        dl.addWidget(groupe_console, 1)
+        dl.addWidget(self.groupe_console, 1)
 
         separateur.addWidget(droite)
         separateur.setSizes([340, 640])
@@ -322,11 +385,11 @@ class Fenetre(QMainWindow):
     def _remplir_liste(self):
         self.actions_liste = registre.actions_triees()
         for action in self.actions_liste:
-            item = QListWidgetItem(action.nom)
+            item = QListWidgetItem(_(action.nom))
             item.setToolTip(action.identifiant)
             self.liste.addItem(item)
         if not self.actions_liste:
-            self.liste.addItem("Aucune action enregistrée")
+            self.liste.addItem(_("Aucune action enregistrée"))
             self.bouton_executer.setEnabled(False)
             return
         self.liste.currentRowChanged.connect(self._afficher_action)
@@ -342,12 +405,12 @@ class Fenetre(QMainWindow):
             return
         action = self.actions_liste[row]
         self.action_courante = action
-        self.libelle_description.setText(action.description)
+        self.libelle_description.setText(_(action.description))
         for p in action.parametres:
             widget = self._creer_champ(p)
-            self.formulaire.addRow(p.label or p.nom, widget)
+            self.formulaire.addRow(_(p.label) if p.label else p.nom, widget)
         if not action.parametres:
-            self.formulaire.addRow(QLabel("Cette action n'a besoin d'aucun paramètre."))
+            self.formulaire.addRow(QLabel(_("Cette action n'a besoin d'aucun paramètre.")))
 
     def _vider_formulaire(self):
         # NB : on utilise count() (fiable même sur un QFormLayout vide) plutôt
@@ -396,7 +459,7 @@ class Fenetre(QMainWindow):
             if p.defaut not in ("", None):
                 widget.setText(str(p.defaut))
         if p.aide:
-            widget.setToolTip(p.aide)
+            widget.setToolTip(_(p.aide))
         self.champs[p.nom] = (p, widget)
         return widget
 
@@ -419,10 +482,10 @@ class Fenetre(QMainWindow):
         # transmettre. En l'accepter, la méthode tolère toutes les façons
         # d'être appelée (bouton, signal, appel direct) sans TypeError.
         if self.occupe:
-            QMessageBox.information(self, "CEVI", "Une action est déjà en cours d'exécution.")
+            QMessageBox.information(self, "CEVI", _("Une action est déjà en cours d'exécution."))
             return
         if self.action_courante is None:
-            QMessageBox.warning(self, "CEVI", "Aucune action sélectionnée.")
+            QMessageBox.warning(self, "CEVI", _("Aucune action sélectionnée."))
             return
 
         action = self.action_courante
@@ -437,22 +500,23 @@ class Fenetre(QMainWindow):
         try:
             kwargs = registre.preparer_parametres(action, valeurs)
         except ValueError as e:
-            QMessageBox.warning(self, "Paramètre invalide", str(e))
+            QMessageBox.warning(self, _("Paramètre invalide"), _(str(e)))
             return
 
         self.occupe = True
         self.bouton_executer.setEnabled(False)
-        self.bouton_executer.setText("Exécution en cours...")
-        self.ajouter_console(f"\n>>> Exécution de « {action.nom} »...\n")
+        self.bouton_executer.setText(_("Exécution en cours..."))
+        self.ajouter_console(_("\n>>> Exécution de « {nom} »...\n").format(nom=_(action.nom)))
         self.ouvrier = OuvrierAction(action, kwargs, self.signal_finie.emit)
         self.ouvrier.start()
 
     @slot_protege()
     def sur_action_finie(self, resultat):
-        self.ajouter_console(f"\n[Résultat] {resultat}\n")
+        self.ajouter_console(_("\n[Résultat] {resultat}\n").format(
+            resultat=i18n.traduire_texte(str(resultat))))
         self.occupe = False
         self.bouton_executer.setEnabled(True)
-        self.bouton_executer.setText("Exécuter l'action")
+        self.bouton_executer.setText(_("Exécuter l'action"))
 
     @slot_protege(dialogue=False)
     def ajouter_console(self, texte):
@@ -464,8 +528,8 @@ class Fenetre(QMainWindow):
     def closeEvent(self, evenement):
         if self.occupe:
             reponse = QMessageBox.question(
-                self, "Action en cours",
-                "Une action est en cours d'exécution.\nVoulez-vous vraiment quitter ?",
+                self, _("Action en cours"),
+                _("Une action est en cours d'exécution.\nVoulez-vous vraiment quitter ?"),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
             if reponse != QMessageBox.StandardButton.Yes:
@@ -512,8 +576,8 @@ def lancer():
         try:
             QMessageBox.critical(
                 None, "CEVI",
-                "Erreur au démarrage de l'interface.\n"
-                "Le détail complet est écrit dans le terminal.",
+                _("Erreur au démarrage de l'interface.\n"
+                  "Le détail complet est écrit dans le terminal."),
             )
         except Exception:
             pass
