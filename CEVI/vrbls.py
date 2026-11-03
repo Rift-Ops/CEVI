@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (C) 2026 Pul-07 — CEVI est un logiciel libre sous licence GNU GPL v3 (voir LICENSE).
 """Chemins des outils externes (adb, scrcpy).
 
 Ordre de recherche pour chaque outil :
