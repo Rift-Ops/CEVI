@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (C) 2026 Pul-07 — CEVI est un logiciel libre sous licence GNU GPL v3 (voir LICENSE).
 import subprocess as sps
 from vrbls import adb, scrcpy
 import time as t

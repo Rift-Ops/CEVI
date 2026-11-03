@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (C) 2026 Pul-07 — CEVI est un logiciel libre sous licence GNU GPL v3 (voir LICENSE).
 """
 Actions de connexion au téléphone (adb).
 Reprend les options 3 et 4 du menu de CEVI.py + une action de déconnexion utile.

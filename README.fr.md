@@ -194,4 +194,5 @@ Toute utilisation en dehors de ce cadre se fait à vos seuls risques.
 ## Licence
 
 Ce projet est placé sous licence **GNU General Public License v3.0** — voir le fichier
-[LICENSE.md](LICENSE.md).
+[LICENSE](LICENSE).
+Les outils tiers (scrcpy, adb…) gardent leur propre licence : voir [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
