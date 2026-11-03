@@ -1,4 +1,7 @@
 # CEVI
+
+🇫🇷 [Lire en français](README.fr.md)
+
 ## NB: For the moment the first version and the code itself is in French since I had not done the program to put it on github, so excuse and since the project is open source, you can easily adapt it to your needs
 
 Soon I will make the second version but in English, thank you for understanding
@@ -35,7 +38,10 @@ python -m venv venv && source venv/bin/activate
 git clone https://github.com/<your-username>/CEVI.git
 cd CEVI && cd CEVI
 pip install PyQt6
+unzip ../outils.zip -d .   # adb + scrcpy -> CEVI/outils/ (optional if already installed on your system)
 ```
+
+adb and scrcpy are looked up first in `CEVI/outils/`, then in your system `PATH`.
 
 Connect your phone (USB debugging enabled) and pair it once with
 `scrcpy` or `adb pair <phone-ip>:<port>` for wireless use.
@@ -115,6 +121,7 @@ scrcpy records the mirrored stream to an MP4 file for a chosen duration
 | `capture_ecran`              | Screenshot of the phone screen (View Once photos) |
 | `enregistrer_ecran`          | Screen recording as MP4 (View Once videos)        |
 | `connecter_telephone`        | Connect the phone over Wi-Fi (ADB TCP/IP)         |
+| `appairer_telephone`         | Pair the computer with the phone (`adb pair`)     |
 | `deconnecter_adb`            | Disconnect the ADB server                         |
 | `diagnostic`                 | Check that everything is installed and reachable  |
 | `lister_peripheriques_video` | List `/dev/video*` devices                        |

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Actions de connexion au téléphone (adb).
-Reprend l'option 3 du menu de CEVI.py + une action de déconnexion utile.
+Reprend les options 3 et 4 du menu de CEVI.py + une action de déconnexion utile.
 Exemples d'actions avec paramètres REQUIS (ip, port).
 """
 
@@ -40,9 +40,9 @@ def connecter_telephone(ip="", port=""):
     try:
         info = sps.run(
             vrbls.adb + ["devices"],
-            capture_output=True, text=True, env=os.environ,
+            capture_output=True, text=True, env=os.environ, timeout=15,
         )
-        if "device" in info.stdout and len(info.stdout.strip().splitlines()) > 1:
+        if cevi.appareil_connecte(info.stdout):
             return "Appareil déjà connecté."
 
         sps.run(vrbls.adb + ["kill-server"])
@@ -50,16 +50,38 @@ def connecter_telephone(ip="", port=""):
         t.sleep(2)
         res = sps.run(
             vrbls.adb + ["connect", f"{ip}:{port}"],
-            capture_output=True, env=os.environ, text=True,
+            capture_output=True, env=os.environ, text=True, timeout=30,
         )
-        if "connected" in res.stdout.lower():
-            return "Connecté avec succès."
-        if "refused" in res.stdout.strip():
-            return "Connexion échouée (connexion refusée)."
-        print(res.stdout.strip().lower())
-        return "Réponse d'adb : " + (res.stdout.strip().lower() or "(vide)")
+        return cevi.analyser_connexion(res.stdout + res.stderr)[1]
+    except sps.TimeoutExpired:
+        return "Erreur pendant la connexion : adb ne répond pas (délai dépassé)."
     except (OSError, ValueError, TypeError) as e:
         return f"Erreur pendant la connexion : {e}"
+
+
+@enregistrer_action(
+    "appairer_telephone",
+    "Appairer le téléphone (adb pair)",
+    "Reprend l'option 4 de CEVI.py (jamais implémentée à l'origine) : associe "
+    "l'ordinateur au téléphone avec le code à 6 chiffres affiché dans "
+    "Options pour les développeurs > Débogage sans fil > Associer l'appareil.",
+    parametres=[
+        Parametre("ip", label="IP du téléphone (réseau local)", type="str",
+                  requis=True, aide="Exemple : 192.168.1.24"),
+        Parametre("port", label="Port d'appairage", type="str", requis=True,
+                  aide="Port affiché dans la fenêtre d'association (différent de celui de connexion)"),
+        Parametre("code", label="Code d'appairage", type="str", requis=True,
+                  aide="Code à 6 chiffres affiché sur le téléphone"),
+    ],
+)
+def appairer_telephone(ip="", port="", code=""):
+    cevi = charger_cevi()
+    try:
+        return cevi.appairer_telephone(ip, port, code)[1]
+    except sps.TimeoutExpired:
+        return "Erreur pendant l'appairage : adb ne répond pas (délai dépassé)."
+    except (OSError, ValueError, TypeError) as e:
+        return f"Erreur pendant l'appairage : {e}"
 
 
 @enregistrer_action(

@@ -6,7 +6,6 @@ en réutilisant ses fonctions via le chargeur (sans le modifier).
 Exemples d'actions AVEC paramètres (formulaire généré automatiquement en GUI).
 """
 
-import datetime as dt
 import os
 import subprocess as sps
 import time as t
@@ -29,8 +28,8 @@ import vrbls
             "numero_video",
             label="Numéro du périphérique vidéo",
             type="int", defaut=2, mini=0,
-            aide="scrcpy envoie le flux vers /dev/video<N> ; la capture finale "
-                 "lit /dev/video2 (voir capture_directe dans CEVI.py)",
+            aide="scrcpy envoie le flux vers /dev/video<N> et la capture lit "
+                 "ce même périphérique",
         ),
     ],
 )
@@ -68,16 +67,19 @@ def capture_ecran(numero_video=2):
         cevi.list_ecran_v()
 
         print(f"Lancement de scrcpy vers /dev/video{numero_video}...")
-        cevi.scrcpy_arrpl(str(numero_video))
-        print("Attente de 2 secondes pour le démarrage du flux...")
-        t.sleep(2)
+        flux = cevi.scrcpy_arrpl(numero_video)
+        try:
+            print("Attente de 2 secondes pour le démarrage du flux...")
+            t.sleep(2)
 
-        etat_appli = cevi.verifi_quel_appli()
-        print(etat_appli)
-        if "supportée" in etat_appli:
-            cevi.capture_directe()
-            return "Capture d'écran effectuée."
-        else:
+            etat_appli = cevi.verifi_quel_appli()
+            print(etat_appli)
+            if cevi.appli_supportee(etat_appli):
+                if cevi.capture_directe(numero_video):
+                    return "Capture d'écran effectuée."
+                return "La capture a échoué : voir les messages de ffmpeg ci-dessus."
+            if etat_appli != cevi.MSG_APPLI_NON:
+                return "Impossible de vérifier l'appli : " + etat_appli
             print("Appli non supportée, arrêt du serveur adb...")
             try:
                 sps.run(vrbls.adb + ["kill-server"])
@@ -85,6 +87,8 @@ def capture_ecran(numero_video=2):
                 print(e)
             return "Appli non supportée : ouvrez WhatsApp ou Facebook sur le " \
                    "téléphone puis relancez."
+        finally:
+            cevi.arreter_processus(flux)  # scrcpy ne reste plus actif après la capture
     except (OSError, ValueError, TypeError) as e:
         return f"Erreur pendant la capture : {e}"
 
@@ -115,12 +119,16 @@ def enregistrer_ecran(duree=10, nom_fichier=""):
     try:
         etat_appli = cevi.verifi_quel_appli()
         print(etat_appli)
-        if "non" in etat_appli:
-            return "Appli non supportée : ouvrez WhatsApp ou Facebook sur le " \
-                   "téléphone puis relancez."
+        if not cevi.appli_supportee(etat_appli):
+            if etat_appli == cevi.MSG_APPLI_NON:
+                return "Appli non supportée : ouvrez WhatsApp ou Facebook sur le " \
+                       "téléphone puis relancez."
+            return "Impossible de vérifier l'appli : " + etat_appli
 
         if not nom_fichier:
-            nom_fichier = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_enregistrement.mp4"
+            nom_fichier = cevi.horodatage() + "_enregistrement.mp4"
+        elif not nom_fichier.lower().endswith(".mp4"):
+            nom_fichier += ".mp4"  # scrcpy déduit le format d'après l'extension
 
         vraie_seconde = (duree * 10) / 9  # calibrage identique à CEVI.py
         print(f"Enregistrement lancé pour {duree} secondes...")
