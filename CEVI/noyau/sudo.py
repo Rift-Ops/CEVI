@@ -42,6 +42,8 @@ import shutil
 import subprocess as sps
 import sys
 
+from noyau.i18n import _
+
 # État interne du module ---------------------------------------------------
 _mot_de_passe = None   # en mémoire pour l'action en cours uniquement
 _demandeur = None      # fonction(titre, message) -> mot de passe (GUI)
@@ -89,6 +91,7 @@ def dernieres_lignes(texte, n=3):
 def _demander(titre, message):
     """Demande le mot de passe par le canal disponible et le mémorise."""
     global _mot_de_passe
+    titre, message = _(titre), _(message)
     if _demandeur is not None:
         # mode graphique : boîte de dialogue (sûr pour les threads)
         mot = _demandeur(titre, message)
@@ -97,7 +100,7 @@ def _demander(titre, message):
         print(titre)
         if message:
             print(message)
-        mot = getpass.getpass("Mot de passe (sudo) : ")
+        mot = getpass.getpass(_("Mot de passe (sudo) : "))
     else:
         raise ErreurSudo(
             "Un mot de passe administrateur (sudo) est requis, mais aucun "
@@ -161,7 +164,7 @@ def lancer(commande, titre="Mot de passe administrateur requis",
             _mot_de_passe = mot
             break
         _mot_de_passe = None
-        print(f"Mot de passe refusé par sudo (essai {essai}/{tentatives}).")
+        print(f"Mot de passe refusé par sudo (essai {essai}/{tentatives}).")  # traduit à l'affichage
     else:
         raise ErreurSudo(
             f"Mot de passe incorrect après {tentatives} tentatives : "

@@ -22,6 +22,7 @@ Python file in `actions/` and it works in both CLI and PyQt6 GUI.
 - **Plugin system** — each action is a self-contained Python file, discovered
   automatically
 - Works the same in **CLI** and **GUI** mode
+- **Language selector** — French and English, in the terminal and in the window
 
 ## Requirements
 
@@ -78,6 +79,17 @@ python main.py -e connecter_telephone --args ip=192.168.1.24 port=5555
 ```bash
 python main.py
 ```
+
+**Language** (French / English):
+
+```bash
+python main.py -L en          # choose the language (remembered for next time)
+python main.py -L fr -l
+```
+
+The language can also be changed from the interactive menu (`L`), from the drop-down
+list at the top right of the window (`-mg`), or with `CEVI_LANG=en`. The choice is stored in
+`~/.config/cevi/langue`. By default CEVI follows your system language.
 
 When an action needs administrator rights (e.g. loading the `v4l2loopback`
 module), CEVI **asks for your sudo password explicitly** — through a dialog
@@ -174,6 +186,13 @@ def hello(nom="world"):
 ```bash
 python main.py -e hello --args nom=CEVI
 ```
+
+### Add a language
+
+All texts are written in French in the source code. Translations live in
+`noyau/traductions.py`: add a dictionary (French text → translation), then declare it in
+`noyau/i18n.py` (`CATALOGUES` and `NOMS_LANGUES`). A text without translation simply stays
+in French. Texts with variables use `{name}` on both sides.
 
 ## Disclaimer ⚠️
 

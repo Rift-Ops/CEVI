@@ -19,6 +19,7 @@ Architecture à extensions : déposez un fichier Python dans `actions/` et il fo
   et demande explicite du mot de passe sudo
 - **Système d'extensions** — chaque action est un fichier Python autonome, détecté automatiquement
 - Fonctionne de la même façon en **ligne de commande** et en **mode graphique**
+- **Sélecteur de langue** — français et anglais, dans le terminal comme dans la fenêtre
 
 ## Prérequis
 
@@ -76,6 +77,17 @@ python main.py -e connecter_telephone --args ip=192.168.1.24 port=5555
 ```bash
 python main.py
 ```
+
+**Langue** (français / anglais) :
+
+```bash
+python main.py -L en          # choisit la langue (mémorisée pour la prochaine fois)
+python main.py -L fr -l
+```
+
+La langue se change aussi depuis le menu interactif (touche `L`), depuis la liste déroulante
+en haut à droite de la fenêtre (`-mg`), ou avec `CEVI_LANG=en`. Le choix est enregistré dans
+`~/.config/cevi/langue`. Par défaut, CEVI suit la langue de votre système.
 
 Quand une action exige les droits administrateur (par exemple charger le module
 `v4l2loopback`), CEVI **demande explicitement votre mot de passe sudo** — par une boîte
@@ -164,6 +176,13 @@ def bonjour(nom="le monde"):
 ```bash
 python main.py -e bonjour --args nom=CEVI
 ```
+
+### Ajouter une langue
+
+Tous les textes sont écrits en français dans le code. Les traductions se trouvent dans
+`noyau/traductions.py` : ajoutez un dictionnaire (texte français → traduction), puis déclarez-le
+dans `noyau/i18n.py` (`CATALOGUES` et `NOMS_LANGUES`). Un texte sans traduction reste en français.
+Les textes à variables utilisent `{nom}` des deux côtés.
 
 ## Avertissement ⚠️
 

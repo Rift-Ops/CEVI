@@ -42,6 +42,7 @@ Types de paramètres acceptés : "str", "int", "float", "bool", "choix".
 from dataclasses import dataclass
 
 from noyau import sudo
+from noyau.i18n import _
 
 
 @dataclass
@@ -202,18 +203,18 @@ def executer_action(identifiant, **parametres):
 def resumer_actions():
     """Retourne un texte lisible listant les actions et leurs paramètres."""
     if not _ACTIONS:
-        return "Aucune action enregistrée."
+        return _("Aucune action enregistrée.")
     largeur = max(len(a.identifiant) for a in _ACTIONS.values())
-    lignes = [f"{len(_ACTIONS)} actions disponibles :", ""]
+    lignes = [_("{n} actions disponibles :").format(n=len(_ACTIONS)), ""]
     for i, a in enumerate(_ACTIONS.values(), 1):
-        lignes.append(f"  {i:>2}. {a.identifiant.ljust(largeur)}  {a.nom}")
+        lignes.append(f"  {i:>2}. {a.identifiant.ljust(largeur)}  {_(a.nom)}")
         if a.description:
-            lignes.append(f"      {a.description}")
+            lignes.append(f"      {_(a.description)}")
         for p in a.parametres:
-            si_requis = "requis" if p.requis else f"défaut : {p.defaut!r}"
+            si_requis = _("requis") if p.requis else _("défaut : {defaut}").format(defaut=repr(p.defaut))
             ligne = f"      - {p.nom} ({p.type}, {si_requis})"
             if p.aide:
-                ligne += f" — {p.aide}"
+                ligne += f" — {_(p.aide)}"
             lignes.append(ligne)
         lignes.append("")
     return "\n".join(lignes).rstrip()

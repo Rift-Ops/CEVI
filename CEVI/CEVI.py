@@ -6,6 +6,8 @@ import glob as g
 import datetime as dt
 import os
 
+from noyau.i18n import _, choisir_langue_terminal
+
 # Messages renvoyés par verifi_quel_appli(). Ils sont comparés avec
 # appli_supportee() et NON avec un test du genre `"supportée" in message` :
 # "Appli non supportée" contient lui aussi le mot "supportée", ce qui faisait
@@ -251,7 +253,7 @@ def _option_capture():
     lancement_v4l2loopback()
     list_ecran_v()
 
-    c = input("Écrivez le plus grand chiffre que vous voyez: ").strip()
+    c = input(_("Écrivez le plus grand chiffre que vous voyez: ")).strip()
     if not c.isdigit():
         print("Entrée invalide : un nombre est attendu")
         return False
@@ -289,7 +291,7 @@ def _option_enregistrement():
                 print("Impossible de vérifier l'appli, vérifiez la connexion adb puis relancez le script")
             return True
 
-        c = int(input("Mettez en seconde le temps d'enregistrement: "))
+        c = int(input(_("Mettez en seconde le temps d'enregistrement: ")))
         if c <= 0:
             raise ValueError("la durée doit être supérieure à 0")
         vraie_seconde = (c*10)/9
@@ -326,8 +328,8 @@ def _option_connexion():
         sps.run(adb + ["kill-server"])
         print("Entrez les infos")
 
-        ip = input("IP du téléphone local: ").strip()
-        port = input("PORT: ").strip()
+        ip = input(_("IP du téléphone local: ")).strip()
+        port = input(_("PORT: ")).strip()
         print("connexion en cours...")
         t.sleep(2)
         res = sps.run(adb + ["connect", ip + ":" + port], capture_output=True,
@@ -342,9 +344,9 @@ def _option_appairage():
     print("Sur le téléphone : Options pour les développeurs > Débogage sans fil > "
           "Associer l'appareil avec un code d'association")
     try:
-        ip = input("IP du téléphone local: ").strip()
-        port = input("PORT d'appairage (celui de la fenêtre d'association): ").strip()
-        code = input("Code d'appairage à 6 chiffres: ").strip()
+        ip = input(_("IP du téléphone local: ")).strip()
+        port = input(_("PORT d'appairage (celui de la fenêtre d'association): ")).strip()
+        code = input(_("Code d'appairage à 6 chiffres: ")).strip()
         ok, message = appairer_telephone(ip, port, code)
         print(message)
         if ok:
@@ -361,8 +363,9 @@ def start():
         print("3- Connecter le téléphone (Assurez vous que votre appareil ait déjà été connecté au moins une fois, voir 4)")
         print("4- Appairage de l'ordinateur au téléphone")
         print("5- Quitter")
+        print("6- Langue")
 
-        choix = input("Quel choix prendre: ")
+        choix = input(_("Quel choix prendre: "))
 
         if choix == "1":
             if _option_capture():
@@ -381,9 +384,15 @@ def start():
         elif choix == "5":
             break
 
+        elif choix == "6":
+            choisir_langue_terminal()
+
         else:
             print("Entrée invalide")
 
 
 if __name__ == "__main__":
+    from noyau import i18n
+    i18n.initialiser()
+    i18n.installer_flux_traduits()
     start()
